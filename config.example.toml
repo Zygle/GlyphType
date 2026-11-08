@@ -6,3 +6,16 @@ x = 0
 y = 0
 width = 800
 height = 200
+
+[ocr]
+language = "eng"
+executable = "tesseract"
+page_segmentation_mode = 6 # one block of text
+
+[preprocessing]
+grayscale = false
+contrast = 1.0
+scale = 1.0
+threshold = -1 # -1 disables thresholding; otherwise 0..255
+median_filter = false
+sharpen = false

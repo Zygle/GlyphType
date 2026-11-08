@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "glyphtype"
 version = "0.1.0"
-description = "Local screen-region capture for an incremental OCR typing project"
+description = "Local screen-region capture and OCR for an incremental typing project"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["mss>=9,<11"]
+dependencies = ["mss>=9,<11", "Pillow>=10,<13"]
 
 [project.scripts]
 glyphtype = "glyphtype.cli:main"
