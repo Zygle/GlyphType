@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "glyphtype"
+version = "0.1.0"
+description = "Local screen-region capture for an incremental OCR typing project"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["mss>=9,<11"]
+
+[project.scripts]
+glyphtype = "glyphtype.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["python"]

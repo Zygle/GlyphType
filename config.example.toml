@@ -1,0 +1,8 @@
+[display]
+backend = "auto" # auto or x11; Wayland capture is not implemented
+
+[capture]
+x = 0
+y = 0
+width = 800
+height = 200
