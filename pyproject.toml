@@ -8,10 +8,17 @@ version = "0.1.0"
 description = "Local screen-region capture and OCR for an incremental typing project"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["mss>=9,<11", "Pillow>=10,<13"]
+dependencies = ["mss>=9,<11", "Pillow>=10,<13", "pynput>=1.7,<2", "dbus-next>=0.2.3,<1"]
+
+[project.optional-dependencies]
+train = ["numpy>=1.26", "torch>=2.5,<3", "onnx>=1.17", "onnxruntime>=1.20,<2"]
 
 [project.scripts]
 glyphtype = "glyphtype.cli:main"
+glyphtype-generate-dataset = "glyphtype.generate_dataset:main"
+glyphtype-train = "glyphtype.train_model:main"
+glyphtype-export-onnx = "glyphtype.export_model:main"
+glyphtype-evaluate = "glyphtype.evaluate_model:main"
 
 [tool.setuptools.packages.find]
 where = ["python"]

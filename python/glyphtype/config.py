@@ -48,6 +48,22 @@ class OcrConfig:
     executable: str = "tesseract"
     page_segmentation_mode: int = 6
     preprocessing: PreprocessConfig = PreprocessConfig()
+    backend: str = "tesseract"
+    model_path: str | None = None
+    tessdata_dir: str | None = None
+
+
+@dataclass(frozen=True)
+class TypingConfig:
+    dry_run: bool = True
+    character_delay_ms: int = 100
+
+
+@dataclass(frozen=True)
+class TrackingConfig:
+    capture_interval_ms: int = 1000
+    minimum_confidence: float = 90.0
+    confirmations: int = 2
 
 
 def _read_toml(path: Path) -> dict:
@@ -71,8 +87,8 @@ def load_config(path: Path) -> Config:
     if not isinstance(capture, dict):
         raise ConfigError("[capture] table is required")
     backend = display.get("backend", "auto")
-    if backend not in ("auto", "x11"):
-        raise ConfigError("display.backend must be 'auto' or 'x11'")
+    if backend not in ("auto", "x11", "wayland"):
+        raise ConfigError("display.backend must be 'auto', 'wayland', or 'x11'")
     try:
         region = Region(*(capture[name] for name in ("x", "y", "width", "height")))
     except KeyError as exc:
@@ -90,6 +106,17 @@ def load_ocr_config(path: Path | None = None) -> OcrConfig:
     language = ocr.get("language", "eng")
     executable = ocr.get("executable", "tesseract")
     psm = ocr.get("page_segmentation_mode", 6)
+    backend = ocr.get("backend", "tesseract")
+    model_path = ocr.get("model_path", "")
+    tessdata_dir = ocr.get("tessdata_dir", "")
+    if backend not in ("tesseract", "onnx"):
+        raise ConfigError("ocr.backend must be 'tesseract' or 'onnx'")
+    if not isinstance(model_path, str):
+        raise ConfigError("ocr.model_path must be a string")
+    if not isinstance(tessdata_dir, str):
+        raise ConfigError("ocr.tessdata_dir must be a string")
+    if backend == "onnx" and not model_path.strip():
+        raise ConfigError("ocr.model_path is required for ONNX")
     if not isinstance(language, str) or not language or any(c.isspace() for c in language):
         raise ConfigError("ocr.language must be a nonempty language code")
     if not isinstance(executable, str) or not executable:
@@ -109,4 +136,41 @@ def load_ocr_config(path: Path | None = None) -> OcrConfig:
         values[name] = float(values[name])
     if type(values["threshold"]) is not int or not -1 <= values["threshold"] <= 255:
         raise ConfigError("preprocessing.threshold must be -1 or an integer from 0 to 255")
-    return OcrConfig(language, executable, psm, PreprocessConfig(**values))
+    if tessdata_dir:
+        directory = Path(tessdata_dir).expanduser()
+        if not directory.is_absolute() and path is not None:
+            directory = path.parent / directory
+        tessdata_dir = str(directory.resolve())
+    return OcrConfig(language, executable, psm, PreprocessConfig(**values),
+                     backend, model_path or None, tessdata_dir or None)
+
+
+def load_typing_config(path: Path | None = None) -> TypingConfig:
+    data = _read_toml(path) if path is not None else {}
+    typing = data.get("typing", {})
+    if not isinstance(typing, dict):
+        raise ConfigError("[typing] must be a table")
+    dry_run = typing.get("dry_run", True)
+    delay = typing.get("character_delay_ms", 100)
+    if type(dry_run) is not bool:
+        raise ConfigError("typing.dry_run must be a boolean")
+    if type(delay) is not int or not 0 <= delay <= 5000:
+        raise ConfigError("typing.character_delay_ms must be an integer from 0 to 5000")
+    return TypingConfig(dry_run, delay)
+
+
+def load_tracking_config(path: Path | None = None) -> TrackingConfig:
+    data = _read_toml(path) if path is not None else {}
+    tracking = data.get("tracking", {})
+    if not isinstance(tracking, dict):
+        raise ConfigError("[tracking] must be a table")
+    interval = tracking.get("capture_interval_ms", 1000)
+    confidence = tracking.get("minimum_confidence", 90.0)
+    confirmations = tracking.get("confirmations", 2)
+    if type(interval) is not int or not 100 <= interval <= 60000:
+        raise ConfigError("tracking.capture_interval_ms must be 100..60000")
+    if type(confidence) not in (int, float) or not 0 <= confidence <= 100:
+        raise ConfigError("tracking.minimum_confidence must be 0..100")
+    if type(confirmations) is not int or not 2 <= confirmations <= 5:
+        raise ConfigError("tracking.confirmations must be 2..5")
+    return TrackingConfig(interval, float(confidence), confirmations)

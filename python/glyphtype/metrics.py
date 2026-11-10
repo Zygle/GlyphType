@@ -18,3 +18,21 @@ def character_error_rate(expected: str, actual: str) -> float:
             ))
         previous = current
     return previous[-1] / len(expected)
+
+
+def word_error_rate(expected: str, actual: str) -> float:
+    reference = expected.split()
+    hypothesis = actual.split()
+    if not reference:
+        return 0.0 if not hypothesis else 1.0
+    previous = list(range(len(hypothesis) + 1))
+    for row, word in enumerate(reference, start=1):
+        current = [row]
+        for column, predicted in enumerate(hypothesis, start=1):
+            current.append(min(
+                current[column - 1] + 1,
+                previous[column] + 1,
+                previous[column - 1] + (word != predicted),
+            ))
+        previous = current
+    return previous[-1] / len(reference)

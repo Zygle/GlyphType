@@ -24,20 +24,30 @@ def detect_display(env: Mapping[str, str] | None = None) -> str:
 
 
 def require_x11(backend: str, env: Mapping[str, str] | None = None) -> None:
-    """Reject unsupported or ambiguous sessions before opening X11 capture."""
+    """Validate the optional legacy X11 backend."""
     display = detect_display(env)
-    if display == "wayland":
-        raise DisplayError(
-            "Wayland session detected. Phase 1 captures only native X11 desktops; "
-            "Xwayland does not expose the full Wayland desktop. Log into an X11 session."
-        )
     if display != "x11":
-        raise DisplayError(
-            "No supported display server detected. Start an X11 desktop session "
-            "with XDG_SESSION_TYPE=x11 and a valid DISPLAY."
-        )
+        raise DisplayError(f"X11 backend requires an X11 session; detected {display}")
     values = os.environ if env is None else env
     if not values.get("DISPLAY"):
         raise DisplayError("X11 session detected, but DISPLAY is unset")
     if backend not in ("auto", "x11"):
         raise DisplayError(f"Unsupported capture backend: {backend}")
+
+
+def resolve_backend(backend: str, env: Mapping[str, str] | None = None) -> str:
+    """Choose the native backend and reject mismatched display settings."""
+    values = os.environ if env is None else env
+    display = detect_display(values)
+    selected = display if backend == "auto" else backend
+    if selected not in ("x11", "wayland"):
+        raise DisplayError(f"No supported display server detected ({display})")
+    if selected != display:
+        raise DisplayError(f"Configured {selected} backend, but active session is {display}")
+    if selected == "x11":
+        require_x11(backend, values)
+    elif not values.get("WAYLAND_DISPLAY"):
+        raise DisplayError("Wayland session detected, but WAYLAND_DISPLAY is unset")
+    elif "KDE" not in values.get("XDG_CURRENT_DESKTOP", "").upper():
+        raise DisplayError("Native Wayland capture currently supports KDE Plasma only")
+    return selected

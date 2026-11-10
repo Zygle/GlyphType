@@ -1,5 +1,5 @@
 [display]
-backend = "auto" # auto or x11; Wayland capture is not implemented
+backend = "auto" # auto, wayland (KDE Plasma), or x11
 
 [capture]
 x = 0
@@ -8,9 +8,12 @@ width = 800
 height = 200
 
 [ocr]
+backend = "tesseract" # Optional: onnx, after training and evaluation
 language = "eng"
 executable = "tesseract"
+tessdata_dir = "" # Optional: path containing eng.traineddata; blank auto-detects models/tessdata
 page_segmentation_mode = 6 # one block of text
+model_path = "" # Set to models/line_ocr/model.onnx for the optional ONNX backend
 
 [preprocessing]
 grayscale = false
@@ -19,3 +22,12 @@ scale = 1.0
 threshold = -1 # -1 disables thresholding; otherwise 0..255
 median_filter = false
 sharpen = false
+
+[typing]
+dry_run = true
+character_delay_ms = 100
+
+[tracking]
+capture_interval_ms = 1000
+minimum_confidence = 90.0 # Tesseract word confidence, 0..100
+confirmations = 2 # Identical high-confidence frames required before typing

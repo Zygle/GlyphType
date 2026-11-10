@@ -7,3 +7,5 @@ build/
 dist/
 config.toml
 captures/
+datasets/
+models/
